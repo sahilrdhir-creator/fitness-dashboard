@@ -245,6 +245,15 @@ table.entries button { background:none; border:none; color:var(--muted); cursor:
     <div class="weekgrid" id="week-grid"></div>
   </div>
 
+  <!-- MEALS (full week) -->
+  <div class="view" id="view-meals">
+    <div class="card">
+      <h2>The full week of meals</h2>
+      <p class="cardio-note">Every day: smoothie 7:30 AM · lunch 12:30 · pre-workout meal ~2:15 · dinner after the gym. Rice weights are cooked; beans are drained canned weight. Each day ≈ 2,300 kcal / 140g protein including the post-workout Fairlife shake.</p>
+    </div>
+    <div id="meals-list"></div>
+  </div>
+
   <!-- GROCERY -->
   <div class="view" id="view-grocery">
     <div class="card">
@@ -866,6 +875,26 @@ function renderWeek(){
   document.getElementById("week-meter").style.width = wpct + "%";
 }
 
+/* ---------- render: full-week meals ---------- */
+function renderMeals(){
+  const el = document.getElementById("meals-list");
+  if (el.dataset.done) return;   // static content, build once
+  el.innerHTML = DAYS.map(day=>{
+    const p = PLAN[day];
+    const fib = p.meals.reduce((s,m)=>s+m[2],0);
+    return `<div class="card">
+      <h2>${day}${p.workout.length?"":" · rest day"} <span class="pill" style="float:right">~${fib}g fiber</span></h2>
+      ${p.meals.map((m,i)=>`
+        <div class="meal">
+          <div class="ex-name">Meal ${i+1} — ${m[0]}</div>
+          <div class="ex-detail">${m[1]}</div>
+          <div class="fiber">~${m[2]}g fiber</div>
+        </div>`).join("")}
+    </div>`;
+  }).join("");
+  el.dataset.done = "1";
+}
+
 /* ---------- render: grocery ---------- */
 function renderGrocery(){
   const el = document.getElementById("grocery-list");
@@ -992,7 +1021,7 @@ document.getElementById("p-add").onclick = ()=>{
 document.getElementById("p-date").value = localISO(new Date());
 
 /* ---------- nav ---------- */
-const VIEWS = ["today","schedule","plan","week","grocery","progress","guide"];
+const VIEWS = ["today","schedule","plan","week","meals","grocery","progress","guide"];
 function showView(v){
   VIEWS.forEach(x=>{
     document.getElementById("view-"+x).classList.toggle("active", x===v);
@@ -1000,6 +1029,7 @@ function showView(v){
   });
   if (v==="schedule") renderSchedule();
   if (v==="plan") renderPlan();
+  if (v==="meals") renderMeals();
   if (v==="week") renderWeek();
   if (v==="grocery") renderGrocery();
   if (v==="progress") renderProgress();
