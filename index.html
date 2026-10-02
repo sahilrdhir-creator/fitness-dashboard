@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Fitness">
+<meta name="theme-color" content="#2a78d6">
+<title>Sahil's Fitness Dashboard — Meal Prep + Workout Plan</title>
+<style>
+:root {
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f0efec;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --baseline:#c3c2b7; --border:rgba(11,11,11,.10);
+  --series:#2a78d6; --series-wash:rgba(42,120,214,.10);
+  --track:#cde2fb; --good:#006300; --good-mark:#0ca30c;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#242423;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --border:rgba(255,255,255,.10);
+    --series:#3987e5; --series-wash:rgba(57,135,229,.12);
+    --track:#184f95; --good:#0ca30c; --good-mark:#0ca30c;
+  }
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--page); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  line-height:1.5; font-size:15px;
+}
+.app { max-width:1060px; margin:0 auto; padding:20px 16px 110px; }
+header h1 { font-size:26px; margin:6px 0 2px; }
+header p { margin:0 0 16px; color:var(--ink-2); }
+
+/* stat tiles */
+.tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:18px; }
+.tile { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px 14px; }
+.tile .label { font-size:12px; color:var(--ink-2); }
+.tile .value { font-size:24px; font-weight:600; }
+.tile .sub { font-size:12px; color:var(--muted); }
+@media (max-width:640px){ .tiles{grid-template-columns:repeat(2,1fr);} }
+
+/* nav */
+.nav { position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:safe center; gap:4px; overflow-x:auto;
+  background:var(--surface); border-top:1px solid var(--border); padding:10px 8px calc(10px + env(safe-area-inset-bottom)); z-index:30; }
+.nav button { flex:none; }
+.nav button { border:1px solid transparent; background:none; color:var(--ink-2); padding:8px 16px;
+  border-radius:999px; cursor:pointer; font-size:14px; }
+.nav button.active { background:var(--series); color:#fff; font-weight:600; }
+
+/* day strip */
+.daystrip { display:flex; gap:8px; overflow-x:auto; padding-bottom:10px; }
+.daystrip button { min-width:86px; background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; padding:8px 10px; cursor:pointer; color:var(--ink-2); text-align:center; }
+.daystrip button.active { border-color:var(--series); color:var(--ink); font-weight:600; }
+.daystrip .dow { font-weight:600; font-size:13px; }
+.daystrip .focus { font-size:11px; }
+
+.card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:14px; }
+.card h2 { font-size:17px; margin:0 0 4px; }
+.card h3 { font-size:15px; margin:14px 0 6px; }
+.cardio-note { color:var(--ink-2); font-size:13px; margin:0 0 10px; }
+
+/* meter */
+.meter { height:8px; border-radius:999px; background:var(--track); overflow:hidden; margin-top:8px; }
+.meter > div { height:100%; background:var(--series); border-radius:999px; transition:width .25s; }
+
+/* exercise + meal rows */
+.ex, .meal { border:1px solid var(--border); background:var(--surface-2); border-radius:12px; padding:10px 12px; margin:8px 0; }
+.ex-top { display:flex; align-items:flex-start; gap:10px; }
+.ex-top input[type=checkbox] { width:20px; height:20px; margin-top:2px; accent-color:var(--series); flex:none; }
+.ex-name { font-weight:600; }
+.ex-detail { font-size:13px; color:var(--ink-2); }
+.ex-prog { font-size:12px; color:var(--muted); }
+.ex-log { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px; margin-top:8px; }
+.ex-log label { font-size:11px; color:var(--muted); display:block; }
+.ex-log input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  padding:7px 9px; color:var(--ink); font:inherit; font-size:14px; }
+.meal .fiber { color:var(--good); font-size:12px; font-weight:600; margin-top:4px; }
+
+/* habits */
+.habits { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+@media (max-width:640px){ .habits{grid-template-columns:1fr;} }
+.habit { display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border);
+  background:var(--surface-2); border-radius:12px; padding:10px 12px; }
+.habit input { width:20px; height:20px; margin-top:2px; accent-color:var(--series); flex:none; }
+.habit .hname { font-weight:600; font-size:14px; }
+.habit .hsub { font-size:12px; color:var(--ink-2); }
+
+/* water */
+.water { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; margin-top:8px; }
+.water button { padding:9px 0; border-radius:8px; border:1px solid var(--border);
+  background:var(--surface-2); color:var(--muted); cursor:pointer; font-size:12px; }
+.water button.on { background:var(--series); color:#fff; border-color:transparent; font-weight:600; }
+
+/* week view */
+.weekgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+.weekday { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px 14px; }
+.weekday .wd-title { font-weight:600; }
+.weekday .wd-sub { font-size:12px; color:var(--ink-2); }
+.weekday .wd-pct { font-size:13px; color:var(--ink-2); margin-top:6px; }
+
+/* grocery */
+.groc-cat { margin-bottom:6px; }
+.groc-item { display:flex; align-items:center; gap:9px; padding:5px 2px; font-size:14px; }
+.groc-item input { width:18px; height:18px; accent-color:var(--series); flex:none; }
+.groc-item.done span { color:var(--muted); text-decoration:line-through; }
+
+/* progress */
+.prog-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px; align-items:end; }
+.prog-form label { font-size:11px; color:var(--muted); display:block; }
+.prog-form input { width:100%; background:var(--surface-2); border:1px solid var(--border);
+  border-radius:8px; padding:8px 9px; color:var(--ink); font:inherit; }
+.prog-form button { background:var(--series); color:#fff; border:none; border-radius:8px;
+  padding:9px 16px; cursor:pointer; font:inherit; font-weight:600; }
+.chartwrap { position:relative; margin-top:10px; }
+.chart-tip { position:absolute; pointer-events:none; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:5px 9px; font-size:12px; box-shadow:0 4px 14px rgba(0,0,0,.15);
+  display:none; white-space:nowrap; z-index:5; }
+table.entries { width:100%; border-collapse:collapse; margin-top:12px; font-size:14px; }
+table.entries th { text-align:left; font-size:12px; color:var(--muted); font-weight:600;
+  border-bottom:1px solid var(--grid); padding:6px 4px; }
+table.entries td { border-bottom:1px solid var(--grid); padding:7px 4px; font-variant-numeric:tabular-nums; }
+table.entries button { background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; }
+
+/* 12-week plan */
+.phase { border:1px solid var(--border); background:var(--surface-2); border-radius:12px; padding:12px 14px; margin:8px 0; }
+.phase.now { border-color:var(--series); box-shadow:0 0 0 1px var(--series) inset; }
+.phase .ph-weeks { font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+.phase .ph-name { font-weight:600; font-size:15px; }
+.phase p { margin:4px 0 0; font-size:13px; color:var(--ink-2); }
+.ex-reco { font-size:12.5px; margin-top:5px; padding:6px 9px; border-radius:8px;
+  background:var(--series-wash); color:var(--ink-2); }
+.ex-reco b { color:var(--ink); }
+.ex-reco.up { background:rgba(12,163,12,.12); }
+.ex-reco.down { background:rgba(208,59,59,.10); }
+
+/* schedule timeline */
+.sched-settings { display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:420px; }
+.sched-settings label { font-size:11px; color:var(--muted); display:block; }
+.sched-settings input { width:100%; background:var(--surface-2); border:1px solid var(--border);
+  border-radius:8px; padding:8px 9px; color:var(--ink); font:inherit; }
+.tl { margin-top:6px; }
+.tl-row { display:grid; grid-template-columns:76px 20px 1fr; gap:0 10px; }
+.tl-time { font-size:13px; color:var(--ink-2); font-weight:600; font-variant-numeric:tabular-nums;
+  text-align:right; padding-top:2px; }
+.tl-rail { position:relative; }
+.tl-rail::before { content:""; position:absolute; left:50%; top:0; bottom:0; width:1px;
+  background:var(--grid); transform:translateX(-50%); }
+.tl-dot { position:absolute; left:50%; top:6px; width:10px; height:10px; border-radius:50%;
+  background:var(--series); border:2px solid var(--surface); transform:translateX(-50%); }
+.tl-row.anchor .tl-dot { width:14px; height:14px; top:4px; }
+.tl-body { padding:0 0 18px; }
+.tl-item { display:flex; gap:10px; align-items:flex-start; cursor:pointer; }
+.tl-item input { width:20px; height:20px; margin-top:1px; accent-color:var(--series); flex:none; }
+.tl-title { font-weight:600; font-size:14px; display:block; }
+.tl-sub { font-size:13px; color:var(--ink-2); display:block; }
+.tl-row.done .tl-title { color:var(--muted); text-decoration:line-through; }
+.tl-row.done .tl-sub { color:var(--muted); }
+.tl-row.done .tl-dot { background:var(--good-mark); }
+.tl-row:last-child .tl-rail::before { bottom:auto; height:14px; }
+
+.guide p, .guide li { color:var(--ink-2); font-size:14px; }
+.guide b { color:var(--ink); }
+.pill { display:inline-block; font-size:12px; border:1px solid var(--border); border-radius:999px;
+  padding:3px 10px; color:var(--ink-2); margin-right:6px; }
+.view { display:none; } .view.active { display:block; }
+.hero { font-size:48px; font-weight:600; line-height:1.1; }
+.footer-note { text-align:center; color:var(--muted); font-size:12px; margin-top:20px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Sahil's Fitness Dashboard</h1>
+    <p>12-week recomp · 183 → 170–175 lb while building muscle · vegetarian · gluten-free · no squats, no deadlifts</p>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="label">Calories</div><div class="value">2,300</div><div class="sub">per day target</div></div>
+    <div class="tile"><div class="label">Protein</div><div class="value">140g</div><div class="sub">spread over 4 meals</div></div>
+    <div class="tile"><div class="label">Carbs / Fat</div><div class="value">295 / 60</div><div class="sub">grams per day</div></div>
+    <div class="tile"><div class="label">Fiber today</div><div class="value" id="tile-fiber">—</div><div class="sub">from planned meals</div></div>
+  </div>
+
+  <!-- TODAY -->
+  <div class="view active" id="view-today">
+    <div class="daystrip" id="daystrip"></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h2 id="day-title"></h2>
+        <span class="pill" id="day-pct"></span>
+      </div>
+      <p class="cardio-note" id="day-cardio"></p>
+      <div class="meter"><div id="day-meter"></div></div>
+    </div>
+    <div class="card">
+      <h2>Workout</h2>
+      <div id="workout-list"></div>
+    </div>
+    <div class="card">
+      <h2>Meals</h2>
+      <div id="meal-list"></div>
+    </div>
+    <div class="card">
+      <h2>Habits</h2>
+      <div class="habits" id="habit-list"></div>
+      <h3>Water — 500 mL each (goal 4 L)</h3>
+      <div class="water" id="water-grid"></div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div class="view" id="view-schedule">
+    <div class="card">
+      <h2>Your times</h2>
+      <p class="cardio-note">The whole day is built off these two. Change them and the timeline updates and saves.</p>
+      <div class="sched-settings">
+        <div><label>Wake up</label><input type="time" id="s-wake"></div>
+        <div><label>Gym / walk time</label><input type="time" id="s-gym"></div>
+      </div>
+    </div>
+    <div class="daystrip" id="daystrip-sched"></div>
+    <div class="card">
+      <h2 id="sched-title"></h2>
+      <p class="cardio-note" id="sched-sub"></p>
+      <div class="tl" id="sched-list"></div>
+    </div>
+  </div>
+
+  <!-- WEEK -->
+  <div class="view" id="view-week">
+    <div class="card">
+      <h2>This week</h2>
+      <p class="cardio-note">Completion is checked-off items (exercises + meals + habits + water) out of everything planned for that day.</p>
+      <div class="hero" id="week-hero">0%</div>
+      <div class="meter"><div id="week-meter"></div></div>
+    </div>
+    <div class="weekgrid" id="week-grid"></div>
+  </div>
+
+  <!-- GROCERY -->
+  <div class="view" id="view-grocery">
+    <div class="card">
+      <h2>Weekly grocery list</h2>
+      <p class="cardio-note">Check items off as you shop. Choose certified gluten-free where marked; rinse canned beans.</p>
+      <div id="grocery-list"></div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="view" id="view-progress">
+    <div class="card">
+      <h2>Log a measurement</h2>
+      <p class="cardio-note">Fill in whichever ones you measured — leave the rest blank. Same date updates the earlier entry.</p>
+      <div class="prog-form">
+        <div><label>Date</label><input type="date" id="p-date"></div>
+        <div><label>Weight (lb)</label><input type="number" step="0.1" id="p-weight" placeholder="172.4"></div>
+        <div><label>Waist (in)</label><input type="number" step="0.1" id="p-waist" placeholder="33.5"></div>
+        <div><label>Chest (in)</label><input type="number" step="0.1" id="p-chest" placeholder="40.0"></div>
+        <div><label>Bicep (in)</label><input type="number" step="0.1" id="p-bicep" placeholder="14.0"></div>
+        <div><label>Thigh (in)</label><input type="number" step="0.1" id="p-thigh" placeholder="22.0"></div>
+        <button id="p-add">Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0">Trend</h2>
+        <select id="p-metric" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--ink);font:inherit">
+          <option value="weight">Body weight (lb)</option>
+          <option value="waist">Waist (in)</option>
+          <option value="chest">Chest (in)</option>
+          <option value="bicep">Bicep (in)</option>
+          <option value="thigh">Thigh (in)</option>
+        </select>
+      </div>
+      <div class="chartwrap">
+        <div id="chart"></div>
+        <div class="chart-tip" id="chart-tip"></div>
+      </div>
+      <table class="entries" id="entry-table"></table>
+    </div>
+  </div>
+
+  <!-- 12-WEEK PLAN -->
+  <div class="view" id="view-plan">
+    <div class="card">
+      <h2 id="plan-week"></h2>
+      <p class="cardio-note" id="plan-phase-note"></p>
+      <div class="meter"><div id="plan-meter"></div></div>
+      <div style="margin-top:12px;max-width:260px">
+        <label style="font-size:11px;color:var(--muted)">Program start date (your week 1 Monday)</label>
+        <input type="date" id="plan-start" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 9px;color:var(--ink);font:inherit">
+      </div>
+    </div>
+    <div class="card">
+      <h2>The 12 weeks</h2>
+      <div id="phase-list"></div>
+    </div>
+    <div class="card guide">
+      <h2>How the weight increases work</h2>
+      <p>Every exercise runs on <b>double progression</b> — the app coaches you through it automatically from the reps you log on the Today tab:</p>
+      <ul>
+        <li><b>You hit the top of the rep range on every set</b> (e.g. told 8–12, you log 12/12/12) → the coach line turns green and tells you the exact new weight for next session (+5 lb dumbbells, +5–10 lb machines, +2.5–5 lb cables).</li>
+        <li><b>You're inside the range but under the top</b> (told 8–12, you log 10/9/8) → same weight next time; your job is adding reps, not load.</li>
+        <li><b>You miss the bottom of the range</b> (told 8–12, you log 7s) → same weight, but stop 1 rep earlier on set one so you don't burn out sets two and three.</li>
+        <li><b>You miss badly</b> (told 8–12, you hit 4) → the weight is simply too heavy: the coach tells you to drop ~10% next session and build back. That's not a failure — finding the right weight IS the first phase.</li>
+      </ul>
+      <p>Set a <b>goal weight</b> on any exercise and the coach also shows how far you are and roughly how many successful weeks it'll take at your increment rate.</p>
+    </div>
+  </div>
+
+  <!-- GUIDE -->
+  <div class="view" id="view-guide">
+    <div class="card guide">
+      <h2>When to add weight</h2>
+      <p>Every exercise uses <b>double progression</b>: a fixed set count and a rep range.</p>
+      <ul>
+        <li>Pick a weight where you finish each set <b>1–2 reps shy of failure</b> (reps in reserve).</li>
+        <li>When you hit the <b>top of the rep range on every set with clean form</b>, raise the weight by the increment listed on the exercise (usually +5 lb dumbbells, +5–10 lb machines, +2.5–5 lb cables).</li>
+        <li>After an increase you'll drop back toward the bottom of the range — that's the cycle working.</li>
+        <li>If you miss the bottom of the range two sessions in a row, drop ~10% and build back up.</li>
+      </ul>
+      <h2>Rules of the program</h2>
+      <ul>
+        <li><b>No squats and no deadlifts</b> — leg day runs through machines (leg press, curls, extensions, hip thrust, abductor/adductor, calves).</li>
+        <li>Lifting 5 days (Mon, Tue, Wed, Fri, Sat); Thursday and Sunday are recovery — 8–10k steps and easy walking.</li>
+        <li>Cardio rides after lifting: 20–30 min incline treadmill or incline walking on the days listed.</li>
+        <li>All major muscle groups are covered, including traps (shrugs, face pulls, carries), forearms (wrist/reverse-wrist curls, reverse curls), obliques (Pallof press), and serratus (cable punch).</li>
+      </ul>
+      <h2>Nutrition rules</h2>
+      <ul>
+        <li>~<b>2,300 kcal</b> · <b>140g protein</b> · 295g carbs · 60g fat, split into 4 meals. Vegetarian and gluten-free throughout — oats, tamari, bread, pasta, and granola must be certified GF.</li>
+        <li><b>The recomp goal (183 → 170–175 lb while building muscle):</b> 2,300 kcal is a ~300–500 kcal deficit at your weight, so expect <b>0.5–1 lb down per week</b> — that pace reaches 175 in roughly 8–12 weeks while keeping strength climbing. If the scale drops faster than ~1.5 lb/week for two straight weeks, add 100–200 kcal (easiest: more rice or an extra banana + PB) — losing faster costs muscle. If it stalls for 2+ weeks, trim 100–150 kcal. The lifts going up while the weight drifts into the goal zone is the recomp working.</li>
+        <li>~10g chia most days plus beans/legumes keeps daily fiber in the 30–40g range.</li>
+        <li>Daily non-negotiables: 1 Fairlife 30g shake, creatine, 4 L water, 7–9 hr sleep.</li>
+        <li>Weigh in 2–3× per week under the same conditions; judge trends over 2-week windows, not single days. Adjust calories only if progress stalls.</li>
+        <li>Weekly prep: rice, tofu, roasted potatoes, beans/lentils, chopped vegetables, and 4–5 chia/oat breakfast portions. Keep sauces separate so nothing goes soggy.</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="footer-note">
+    Progress saves automatically in this browser. Back it up now and then:
+    <button id="exp-btn" style="background:none;border:1px solid var(--border);border-radius:999px;padding:4px 12px;color:var(--ink-2);cursor:pointer;font:inherit;font-size:12px;margin:0 4px">Export backup</button>
+    <button id="imp-btn" style="background:none;border:1px solid var(--border);border-radius:999px;padding:4px 12px;color:var(--ink-2);cursor:pointer;font:inherit;font-size:12px">Restore backup</button>
+    <input type="file" id="imp-file" accept=".json,application/json" style="display:none">
+  </p>
+</div>
+
+<script>
+"use strict";
+/* ---------- plan data ---------- */
+const PLAN = {
+  Monday: { title:"Chest + Triceps + Abs", cardio:"Cardio: 20–25 min incline treadmill after lifting",
+    workout:[
+      ["Incline dumbbell press","4 × 6–10","start 25–40 lb each · +5 lb per DB after 4×10 clean"],
+      ["Flat machine chest press","3 × 8–12","start 50–90 lb · +5–10 lb after 3×12"],
+      ["Cable chest fly","3 × 10–15","start 10–25 lb/side · +2.5–5 lb after 3×15"],
+      ["Pec deck","2 × 12–15","start 40–70 lb · +5–10 lb after 2×15"],
+      ["Assisted dips (lower chest)","2–3 × 8–12","pick assistance for clean reps · reduce when easy"],
+      ["Rope triceps pushdown","3 × 10–15","start 20–40 lb · +5 lb after 3×15"],
+      ["Overhead cable extension","3 × 10–15","start 15–30 lb · +5 lb after 3×15"],
+      ["Cable crunch","3 × 10–15","start 30–50 lb · +5 lb after 3×15"],
+      ["Hanging knee raise","3 × 10–15","bodyweight · add reps, then slower tempo"],
+      ["Pallof press (obliques)","3 × 10–15 / side","light cable · hold 1s per rep"]
+    ],
+    meals:[
+      ["Blueberry banana smoothie","Blend: 300g nonfat Greek yogurt, 60g certified-GF oats, 100g blueberries (frozen works best), 1 banana, 10g chia, 10g peanut butter, splash of 1% milk + ice",10],
+      ["Tofu edamame rice bowl","150g extra-firm tofu, 100g edamame, 200–220g jasmine rice, broccoli + peppers, GF tamari, 1 tsp sesame oil",8],
+      ["Cottage cheese toast","200g low-fat cottage cheese, 2 slices GF bread, 1 apple, cinnamon",6],
+      ["Rajma rice bowl","180g kidney beans, 160–180g basmati rice, tomato/onion masala, 100g Greek yogurt, cucumber salad",11]
+    ]},
+  Tuesday: { title:"Back + Biceps + Traps + Forearms", cardio:"Cardio: 20–30 min incline walking after lifting",
+    workout:[
+      ["Neutral-grip lat pulldown","4 × 8–12","start 50–80 lb · +5–10 lb after 4×12"],
+      ["Chest-supported machine row","4 × 8–12","start 50–90 lb · +5–10 lb after 4×12"],
+      ["Seated cable row","3 × 8–12","start 45–75 lb · +5–10 lb after 3×12"],
+      ["Single-arm cable lat pulldown","3 × 10–15","start 20–35 lb/side · +5 lb after 3×15"],
+      ["Straight-arm pulldown","3 × 12–15","start 20–40 lb · +5 lb after 3×15"],
+      ["Dumbbell shrugs (traps)","3 × 10–15","start 35–50 lb/hand · hold top 1s · +5 lb after 3×15"],
+      ["Face pulls","3 × 12–20","light cable · rear delts + mid traps"],
+      ["Farmer carries","2–3 × 30–45 sec","heavy dumbbells · grip + traps"],
+      ["Preacher curl","3 × 8–12","start 15–30 lb/arm · +2.5–5 lb after 3×12"],
+      ["Hammer curl","3 × 10–15","start 15–25 lb each · +5 lb after 3×15"],
+      ["Reverse curls (forearms)","2–3 × 10–15","light bar or DBs"]
+    ],
+    meals:[
+      ["Strawberry banana smoothie","Blend: 60g certified-GF oats, 250g Greek yogurt, 200ml 1% milk, banana, strawberries, 10g chia, 10g peanut butter + ice",11],
+      ["Mexican tofu bowl","150g tofu, 170–180g rice, 100g black beans, corn, lettuce, salsa, 30g avocado, Greek yogurt",12],
+      ["Cottage cheese potato bowl","250g cottage cheese, 300g roasted potatoes with skin, green onion, hot sauce, 1 tsp olive oil",6],
+      ["Chickpea/lentil pasta","75g dry GF legume pasta, marinara, mushrooms, spinach, parmesan, fruit",10]
+    ]},
+  Wednesday: { title:"Legs + Glutes + Calves + Abs", cardio:"Easy walking only after legs — no hard cardio",
+    workout:[
+      ["45° leg press","4 × 8–12","start 90–180 lb + sled · +10–20 lb after 4×12"],
+      ["Seated leg curl","4 × 10–15","start 35–60 lb · +5–10 lb after 4×15"],
+      ["Leg extension","4 × 10–15","start 35–60 lb · +5–10 lb after 4×15"],
+      ["Hip thrust machine","4 × 8–12","start 50–100 lb · +10 lb after 4×12"],
+      ["Hip abductor machine","3 × 15–20","start 50–90 lb · +10 lb after 3×20"],
+      ["Hip adductor machine","3 × 12–20","start 50–90 lb · +10 lb after 3×20"],
+      ["Seated calf raise","4 × 10–15","start 40–70 lb · +5–10 lb after 4×15"],
+      ["Standing calf raise","3 × 12–20","bodyweight/light · add load after 3×20"],
+      ["Weighted decline crunch","3 × 10–15","start 5–15 lb plate · +5 lb after 3×15"],
+      ["Reverse crunch","3 × 12–20","bodyweight · slow tempo after 3×20"],
+      ["Plank","3 × 45–60 sec","+10 sec or add a light plate"]
+    ],
+    meals:[
+      ["Mixed berry smoothie","Blend: 300g Greek yogurt, 45g certified-GF oats (swap for the granola — blends better), mixed berries, banana, 10g chia, 10g peanut butter + ice",10],
+      ["Thai basil tofu","175g tofu, 200–220g jasmine rice, bell peppers, green beans, basil, GF tamari, chili, 1 tsp sesame oil",8],
+      ["Edamame cottage cheese toast","200g cottage cheese, 75g edamame, 2 slices GF bread, tomato, chili flakes",7],
+      ["Lentil curry + rice","200g cooked lentils, 160–180g basmati rice, tomato curry, 100g Greek yogurt, vegetables",12]
+    ]},
+  Thursday: { title:"Recovery", cardio:"8–10k steps + optional 20–30 min easy walk", workout:[],
+    meals:[
+      ["Banana cinnamon smoothie","Blend: 60–65g certified-GF oats, 250g Greek yogurt, 200ml milk, banana, 10g chia, 8–10g walnuts, cinnamon + ice",11],
+      ["Tofu tikka bowl","175g tofu, 180–200g basmati rice, peppers/onions, 100g Greek yogurt, cucumber, mint",7],
+      ["Cottage cheese fruit bowl","250g cottage cheese, banana, pineapple, 2 GF rice cakes, 10g chia",8],
+      ["Black bean tacos","3 corn tortillas, 150g black beans, 75g edamame, salsa, lettuce, avocado, Greek yogurt, roasted potatoes",13]
+    ]},
+  Friday: { title:"Chest + Back + Abs", cardio:"Cardio: 20–30 min incline treadmill after lifting",
+    workout:[
+      ["Incline machine press","3 × 8–12","start 50–90 lb · +5–10 lb after 3×12"],
+      ["Flat dumbbell press","3 × 8–12","start 25–40 lb each · +5 lb each after 3×12"],
+      ["Low-to-high cable fly","3 × 12–15","start 10–20 lb/side · +2.5–5 lb after 3×15"],
+      ["Neutral-grip lat pulldown","3 × 8–12","start 50–80 lb · +5–10 lb after 3×12"],
+      ["Chest-supported row","3 × 8–12","start 50–90 lb · +5–10 lb after 3×12"],
+      ["One-arm cable row","3 × 10–15","start 25–40 lb/side · +5 lb after 3×15"],
+      ["Straight-arm pulldown","2 × 12–15","start 20–40 lb · +5 lb after 2×15"],
+      ["Face pulls","2–3 × 15–20","shoulder health + upper back"],
+      ["Cable serratus punch","2 × 12–15 / side","light cable · shoulder stability"],
+      ["Cable crunch","3 × 10–15","start 30–50 lb · +5 lb after 3×15"],
+      ["Captain's-chair knee raise","3 × 10–15","bodyweight · add reps then slow tempo"]
+    ],
+    meals:[
+      ["Strawberry PB smoothie","Blend: 300g Greek yogurt, 60g certified-GF oats, strawberries, banana, 10g chia, 10g peanut butter, splash of milk + ice",10],
+      ["Chili cheese toast","3 slices GF bread, 200g cottage cheese, 75g edamame, bell peppers, jalapeños, 30g Mexican cheese, salsa",8],
+      ["Chickpea chaat bowl","180g chickpeas, cucumber, tomato, red onion, chaat masala, lemon, 200g Greek yogurt, 2 GF rice cakes",10],
+      ["Tofu fried rice","150g tofu, 180–200g rice, 100g edamame, carrots, peas, onion, GF tamari",9]
+    ]},
+  Saturday: { title:"Shoulders + Arms", cardio:"Cardio: 25–30 min incline walking after lifting",
+    workout:[
+      ["Seated dumbbell shoulder press","3 × 6–10","start 15–30 lb each · +5 lb each after 3×10"],
+      ["Single-arm cable lateral raise","4 × 12–20","start 5–12.5 lb/side · +2.5–5 lb after 4×20"],
+      ["Dumbbell lateral raise","3 × 12–20","start 5–15 lb each · +2.5–5 lb after 3×20"],
+      ["Reverse pec deck","4 × 12–20","start 25–50 lb · +5 lb after 4×20"],
+      ["Cable rear-delt fly","2 × 15–20","start 5–15 lb/side · +2.5–5 lb after 2×20"],
+      ["Preacher curl","3 × 8–12","start 15–30 lb/arm · +2.5–5 lb after 3×12"],
+      ["Incline dumbbell curl","3 × 10–15","start 10–20 lb each · +2.5–5 lb after 3×15"],
+      ["Hammer curl","2 × 10–15","start 15–25 lb each · +5 lb each after 2×15"],
+      ["Rope pushdown","3 × 10–15","start 20–40 lb · +5 lb after 3×15"],
+      ["Overhead cable extension","3 × 10–15","start 15–30 lb · +5 lb after 3×15"],
+      ["Single-arm cable pushdown","2 × 12–15","start 7.5–20 lb/side · +2.5–5 lb after 2×15"],
+      ["Wrist curls (forearms)","2 × 15–20","light dumbbells or bar"],
+      ["Reverse wrist curls","2 × 15–20","light dumbbells or bar"]
+    ],
+    meals:[
+      ["Apple cinnamon smoothie","Blend: 300g Greek yogurt, 60g certified-GF oats, cored apple, 10g chia, 10g peanut butter, cinnamon, splash of milk + ice",11],
+      ["Chipotle-style sofritas bowl","175g tofu, 170–180g rice, 100g black beans, fajita peppers, corn salsa, pico, lettuce, avocado",13],
+      ["Cottage cheese rice cakes","250g cottage cheese, 4 rice cakes, banana, 10g chia",7],
+      ["Chickpea curry","180g chickpeas, 150–160g basmati rice, tomato curry, spinach, 100g Greek yogurt",12]
+    ]},
+  Sunday: { title:"Full Recovery", cardio:"8–10k steps + optional easy walk", workout:[],
+    meals:[
+      ["Blueberry PB smoothie","Blend: 300g Greek yogurt, 55g certified-GF oats, banana, blueberries, 10g chia, 10g peanut butter, splash of milk + ice",11],
+      ["Tofu sushi bowl","175g tofu, 180–200g sushi rice, 75g edamame, cucumber, carrots, seaweed, GF tamari, sriracha, avocado",9],
+      ["Caprese cottage cheese bowl","250g cottage cheese, tomatoes, basil, 2 slices GF toast, 1 tsp olive oil, fruit",6],
+      ["Rajma + potato + rice","180g kidney beans, 130–140g basmati rice, 150g roasted potatoes, tomato/onion masala, 100g Greek yogurt",12]
+    ]}
+};
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
+const HABITS = [
+  ["fairlife","Fairlife 30g shake","1 per day"],
+  ["creatine","Creatine","daily, any time"],
+  ["protein","140g protein hit","across 4 meals"],
+  ["fiber","Fiber target hit","sum of meal fiber below"],
+  ["cardio","Cardio / movement","per today's plan"],
+  ["steps","8–10k steps","daily movement"],
+  ["sleep","7–9 hr sleep","recovery is the program"],
+  ["calories","~2,300 kcal","adjust only if progress stalls"]
+];
+
+const GROCERY = {
+  "Protein": ["Extra-firm tofu — 5–6 blocks","Frozen edamame — 2 large bags","Nonfat Greek yogurt — 2 large tubs (32 oz)","Low-fat cottage cheese — 4 large tubs (24 oz)","Shredded Mexican cheese — 1 small bag","Parmesan — 1 small container","1% milk — half-gallon","Fairlife 30g protein shakes — 7 or 12-pack","Creatine monohydrate — 1 container"],
+  "Carbs / grains": ["Basmati or jasmine rice — 5 lb bag","Sushi rice — 1 small bag","Certified gluten-free oats — 1 large container","Gluten-free bread — 2 loaves","Gluten-free granola — 1 bag","Corn tortillas — 1 pack","GF chickpea or lentil pasta — 2 boxes","Rice cakes — 1–2 packs"],
+  "Beans + legumes (rinse canned, low-sodium)": ["Kidney beans / rajma — 4 cans","Black beans — 3 cans","Chickpeas — 3 cans","Lentils — 2–3 cans or ~1 lb dry"],
+  "Vegetables": ["Broccoli — 2 heads or bags","Bell peppers — 8–10","Green beans — 1 bag","Spinach — 1 large container","Mushrooms — 1 pack","Carrots — 1 bag","Frozen peas — 1 bag","Corn — 1 bag frozen or 2 cans","Lettuce — 1 large head","Cucumbers — 5–6","Tomatoes — 8–10","Onions — 5–6","Green onions — 1 bunch","Jalapeños — 4–6","Garlic — 1 bulb","Fresh basil — 1 bunch","Fresh mint — 1 bunch","Cilantro — 1 bunch","Potatoes — 5 lb bag"],
+  "Fruit": ["Bananas — 10–12","Apples — 4–5","Blueberries — 2 containers","Strawberries — 2 containers","Mixed berries — 1 large or frozen","Pineapple — 1 fresh or container","Extra fruit for snacks — 5–7 servings"],
+  "Fiber + healthy fats": ["Chia seeds — 1 bag (~10g/day)","Peanut butter — 1 jar","Walnuts — small bag","Pumpkin seeds — small bag","Avocados — 3–4"],
+  "Sauces + seasonings (certified GF where relevant)": ["Tamari / GF soy sauce","Sriracha","Hot sauce","Salsa","Marinara sauce — 2 jars","Sesame oil","Olive oil","Chaat masala","Tikka seasoning","Cumin","Chili powder / flakes","Garlic powder","Onion powder","Black pepper","Cinnamon","Salt","Limes or lemons"]
+};
+
+/* ---------- state ---------- */
+const KEY = "sahil-fitness-dashboard-v1";
+let state = { logs:{}, progress:[], grocery:{} };
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.logs) state = s; } catch(e){}
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+function localISO(d){ // local date, not UTC — keys must match the user's wall clock
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function weekDates(){ // Monday-start week containing today
+  const now = new Date();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  return DAYS.map((d,i)=>{ const dt=new Date(mon); dt.setDate(mon.getDate()+i); return localISO(dt); });
+}
+function todayDow(){ return DAYS[(new Date().getDay()+6)%7]; }
+let currentDay = todayDow();
+
+function dayLog(dateKey){
+  if (!state.logs[dateKey]) state.logs[dateKey] = { ex:{}, meals:{}, habits:{}, water:0, w:{}, r:{} };
+  const l = state.logs[dateKey];
+  l.w = l.w || {}; l.r = l.r || {};
+  return l;
+}
+function dateFor(day){ return weekDates()[DAYS.indexOf(day)]; }
+
+/* ---------- completion ---------- */
+function dayCompletion(day){
+  const plan = PLAN[day], log = state.logs[dateFor(day)];
+  const total = plan.workout.length + plan.meals.length + HABITS.length + 8;
+  if (!log) return { done:0, total };
+  let done = Object.values(log.ex||{}).filter(Boolean).length
+           + Object.values(log.meals||{}).filter(Boolean).length
+           + Object.values(log.habits||{}).filter(Boolean).length
+           + (log.water||0);
+  return { done, total };
+}
+
+/* ---------- render: today ---------- */
+function renderStrip(elId, onPick){
+  const el = document.getElementById(elId);
+  el.innerHTML = "";
+  DAYS.forEach(d=>{
+    const b = document.createElement("button");
+    b.className = d===currentDay ? "active" : "";
+    b.innerHTML = `<div class="dow">${d.slice(0,3)}</div><div class="focus">${PLAN[d].workout.length? PLAN[d].title.split(" + ")[0] : "Rest"}</div>`;
+    b.onclick = ()=>{ currentDay=d; onPick(); };
+    el.appendChild(b);
+  });
+}
+function renderDaystrip(){ renderStrip("daystrip", renderToday); }
+
+function renderToday(){
+  renderDaystrip();
+  const day = currentDay, plan = PLAN[day], dk = dateFor(day), log = dayLog(dk);
+  document.getElementById("day-title").textContent = `${day} — ${plan.title}`;
+  document.getElementById("day-cardio").textContent = plan.cardio;
+
+  const fib = plan.meals.reduce((s,m)=>s+m[2],0);
+  document.getElementById("tile-fiber").textContent = "~" + fib + "g";
+
+  // workout
+  const wl = document.getElementById("workout-list");
+  wl.innerHTML = "";
+  if (!plan.workout.length){
+    wl.innerHTML = `<p class="cardio-note">No lifting today. Walk, stretch, sleep — recovery is part of the program.</p>`;
+  }
+  if (plan.workout.length && weekNum()===7){
+    const note = document.createElement("p");
+    note.className = "cardio-note";
+    note.style.cssText = "border:1px solid var(--border);border-radius:10px;padding:8px 10px";
+    note.innerHTML = "<b>Deload week:</b> same exercises, but only 2 sets each at ~80% of your usual weight, 3–4 reps in reserve. Ignore any “level up” lines this week.";
+    wl.appendChild(note);
+  }
+  if (!state.goals) state.goals = {};
+  plan.workout.forEach((ex,i)=>{
+    const c = coach(currentDay, i, ex);
+    const div = document.createElement("div");
+    div.className = "ex";
+    div.innerHTML = `
+      <div class="ex-top">
+        <input type="checkbox" ${log.ex[i]?"checked":""} data-ex="${i}">
+        <div style="flex:1">
+          <div class="ex-name">${ex[0]} <span class="ex-detail">· ${ex[1]}</span></div>
+          <div class="ex-prog">${ex[2]}</div>
+          <div class="ex-reco ${c.cls}">${c.msg}</div>
+          <div class="ex-log">
+            <div><label>Weight used</label><input type="text" data-w="${i}" value="${log.w[i]||""}" placeholder="lb"></div>
+            <div><label>Reps per set</label><input type="text" data-r="${i}" value="${log.r[i]||""}" placeholder="e.g. 10/9/8"></div>
+            <div><label>Goal weight (lb)</label><input type="text" data-g="${i}" value="${state.goals[currentDay+"|"+i]||""}" placeholder="optional"></div>
+          </div>
+        </div>
+      </div>`;
+    wl.appendChild(div);
+  });
+  wl.querySelectorAll("input[type=checkbox]").forEach(cb=>cb.onchange = e=>{
+    log.ex[e.target.dataset.ex] = e.target.checked; save(); renderMeters();
+  });
+  wl.querySelectorAll("input[data-w]").forEach(inp=>inp.oninput = e=>{ log.w[e.target.dataset.w]=e.target.value; save(); });
+  wl.querySelectorAll("input[data-r]").forEach(inp=>inp.oninput = e=>{ log.r[e.target.dataset.r]=e.target.value; save(); });
+  wl.querySelectorAll("input[data-g]").forEach(inp=>inp.onchange = e=>{
+    state.goals[currentDay+"|"+e.target.dataset.g] = e.target.value; save(); renderToday();
+  });
+
+  // meals
+  const ml = document.getElementById("meal-list");
+  ml.innerHTML = "";
+  plan.meals.forEach((m,i)=>{
+    const div = document.createElement("div");
+    div.className = "meal";
+    div.innerHTML = `
+      <div class="ex-top">
+        <input type="checkbox" ${log.meals[i]?"checked":""} data-meal="${i}">
+        <div>
+          <div class="ex-name">Meal ${i+1} — ${m[0]}</div>
+          <div class="ex-detail">${m[1]}</div>
+          <div class="fiber">~${m[2]}g fiber</div>
+        </div>
+      </div>`;
+    ml.appendChild(div);
+  });
+  ml.querySelectorAll("input").forEach(cb=>cb.onchange = e=>{
+    log.meals[e.target.dataset.meal] = e.target.checked; save(); renderMeters();
+  });
+
+  // habits
+  const hl = document.getElementById("habit-list");
+  hl.innerHTML = "";
+  HABITS.forEach(h=>{
+    const div = document.createElement("div");
+    div.className = "habit";
+    div.innerHTML = `<input type="checkbox" ${log.habits[h[0]]?"checked":""} data-h="${h[0]}">
+      <div><div class="hname">${h[1]}</div><div class="hsub">${h[2]}</div></div>`;
+    hl.appendChild(div);
+  });
+  hl.querySelectorAll("input").forEach(cb=>cb.onchange = e=>{
+    log.habits[e.target.dataset.h] = e.target.checked; save(); renderMeters();
+  });
+
+  // water
+  const wg = document.getElementById("water-grid");
+  wg.innerHTML = "";
+  for (let i=1;i<=8;i++){
+    const b = document.createElement("button");
+    b.textContent = (i*0.5).toFixed(1)+"L";
+    b.className = (log.water||0) >= i ? "on" : "";
+    b.onclick = ()=>{ log.water = (log.water===i) ? i-1 : i; save(); renderToday(); };
+    wg.appendChild(b);
+  }
+  renderMeters();
+}
+
+function renderMeters(){
+  const c = dayCompletion(currentDay);
+  const pct = c.total ? Math.round(100*c.done/c.total) : 0;
+  document.getElementById("day-pct").textContent = `${c.done} / ${c.total} done`;
+  document.getElementById("day-meter").style.width = pct + "%";
+  renderWeek();
+}
+
+/* ---------- render: schedule ---------- */
+function settings(){
+  if (!state.settings) state.settings = { wake:"07:00", gym:"16:00", progStart:"2026-10-05" };
+  const s = state.settings;
+  if (s.gym === "17:30") s.gym = "16:00";                     // migrate old default to Sahil's real time
+  if (!s.progStart || s.progStart === "2026-09-28") s.progStart = "2026-10-05"; // program starts Sat Oct 3; week 1 = Mon Oct 5
+  return s;
+}
+const toMin = t => { const [h,m]=t.split(":").map(Number); return h*60+m; };
+function fmt(min){
+  min = ((min % 1440) + 1440) % 1440;
+  let h = Math.floor(min/60), m = min % 60;
+  const ap = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return h + ":" + String(m).padStart(2,"0") + " " + ap;
+}
+function buildSchedule(day){
+  const s = settings(), wake = toMin(s.wake), gym = toMin(s.gym);
+  const plan = PLAN[day], m = plan.meals, training = plan.workout.length > 0;
+  const bed = wake + 15*60 + 30; // ~8h sleep before the next wake-up
+  const items = [
+    [wake, "Wake up", "500 mL water (1 of 8) — before coffee or anything else", true],
+    [wake+30, "Meal 1 — "+m[0][0], m[0][1]+". Take creatine with it — exact timing doesn't matter, taking it every single day does.", true],
+    [wake+180, "Mid-morning water", "500 mL (2 of 8)", false],
+    [wake+330, "Meal 2 — "+m[1][0], m[1][1]+". Plus 500 mL water (3 of 8).", true],
+    [training ? Math.min(wake+480, gym-105) : wake+480, "Meal 3 — "+m[2][0], m[2][1]+". Plus 500 mL water (4 of 8)."+(training?" This is your pre-workout fuel — timed ~1.5–2 hr before the gym.":""), true]
+  ];
+  if (training){
+    items.push(
+      [gym-15, "Pre-gym", "500 mL water (5 of 8). Head out.", false],
+      [gym, "Lift — "+plan.title, plan.cardio+". Sip ~500 mL across the session (6 of 8).", true],
+      [gym+90, "Post-workout", "Fairlife 30g shake on the way home or right after.", true],
+      [gym+135, "Meal 4 — "+m[3][0], m[3][1]+". Plus 500 mL water (7 of 8).", true]
+    );
+  } else {
+    items.push(
+      [wake+540, "Fairlife 30g shake", "Rest-day protein top-up between meals 3 and 4.", true],
+      [gym, "Movement", plan.cardio+". Sip ~1 L across the rest of the afternoon (5–6 of 8).", true],
+      [gym+105, "Meal 4 — "+m[3][0], m[3][1]+". Plus 500 mL water (7 of 8).", true]
+    );
+  }
+  items.push(
+    [bed-90, "Wind down", "Last 500 mL water (8 of 8) — then stop drinking so sleep isn't interrupted. Screens down if you can.", false],
+    [bed, "Lights out", "Gives you ~8 hours before your "+fmt(wake)+" wake-up. Sleep is where the muscle gets built.", true]
+  );
+  return items.sort((a,b)=>a[0]-b[0]);
+}
+function renderSchedule(){
+  renderStrip("daystrip-sched", renderSchedule);
+  const s = settings();
+  document.getElementById("s-wake").value = s.wake;
+  document.getElementById("s-gym").value = s.gym;
+  const plan = PLAN[currentDay];
+  document.getElementById("sched-title").textContent = currentDay + " — " + plan.title;
+  document.getElementById("sched-sub").textContent = plan.workout.length
+    ? "Training day: 4 meals, creatine with breakfast, shake after lifting, 4 L water, lights out on time."
+    : "Recovery day: same 4 meals and water — the shake moves to the afternoon and the gym slot becomes a walk.";
+  const el = document.getElementById("sched-list");
+  const log = dayLog(dateFor(currentDay));
+  log.sched = log.sched || {};
+  const items = buildSchedule(currentDay);
+  const done = items.filter((it,idx)=>log.sched[idx]).length;
+  document.getElementById("sched-sub").textContent += ` (${done}/${items.length} checked off)`;
+  el.innerHTML = items.map((it,idx)=>`
+    <div class="tl-row${it[3]?" anchor":""}${log.sched[idx]?" done":""}">
+      <div class="tl-time">${fmt(it[0])}</div>
+      <div class="tl-rail"><div class="tl-dot"></div></div>
+      <div class="tl-body">
+        <label class="tl-item">
+          <input type="checkbox" data-s="${idx}" ${log.sched[idx]?"checked":""}>
+          <span><span class="tl-title">${it[1]}</span><span class="tl-sub">${it[2]}</span></span>
+        </label>
+      </div>
+    </div>`).join("");
+  el.querySelectorAll("input[data-s]").forEach(cb=>cb.onchange = e=>{
+    log.sched[e.target.dataset.s] = e.target.checked; save(); renderSchedule();
+  });
+}
+document.getElementById("s-wake").onchange = e=>{ settings().wake = e.target.value || "07:00"; save(); renderSchedule(); };
+document.getElementById("s-gym").onchange = e=>{ settings().gym = e.target.value || "16:00"; save(); renderSchedule(); };
+
+/* ---------- 12-week plan + smart coach ---------- */
+const PHASES = [
+  [1,2,"Foundation","Find your working weights. Start at the low end of every listed range and keep 2–3 reps in reserve (stop each set while 2–3 clean reps are still in the tank). Log weight + reps on everything — the coach lines need a logged session to start working."],
+  [3,6,"Build","The engine phase: push to 1–2 reps in reserve. When you hit the top of a rep range on all sets, the coach bumps your weight next session. Expect +5–10 lb on machines every 1–2 weeks, +2.5–5 lb on dumbbells and cables every 2–3 weeks."],
+  [7,7,"Deload","Recovery week — do every workout, but only 2 sets per exercise at ~80% of your usual weight, 3–4 reps in reserve. It will feel too easy. That's the point: this week is when the last month of work turns into muscle."],
+  [8,11,"Push","Back to full sets at the weights you left off before the deload (they'll feel lighter — that's the deload paying off). Drive final sets to 1 rep in reserve. Progress is slower here: reps before load, and a 2.5 lb jump is still a win."],
+  [12,12,"Peak + measure","Final week at full effort. Retake every measurement on the Progress tab (weight, waist, chest, bicep, thigh) and compare to week 1. Then plan the next 12-week block from where you landed."]
+];
+function weekNum(){
+  const s = settings();
+  if (!s.progStart){ s.progStart = weekDates()[0]; save(); }
+  const t = new Date(); t.setHours(12,0,0,0);
+  const st = new Date(s.progStart+"T12:00:00");
+  return Math.min(12, Math.max(1, Math.floor((t-st)/(7*86400000))+1));
+}
+function renderPlan(){
+  const s = settings();
+  if (!s.progStart){ s.progStart = weekDates()[0]; save(); }
+  document.getElementById("plan-start").value = s.progStart;
+  const w = weekNum();
+  const ph = PHASES.find(p=>w>=p[0]&&w<=p[1]);
+  document.getElementById("plan-week").textContent = `Week ${w} of 12 — ${ph[2]}`;
+  document.getElementById("plan-phase-note").textContent = ph[3];
+  document.getElementById("plan-meter").style.width = Math.round(100*w/12)+"%";
+  document.getElementById("phase-list").innerHTML = PHASES.map(p=>`
+    <div class="phase${w>=p[0]&&w<=p[1]?" now":""}">
+      <div class="ph-weeks">Week${p[0]===p[1]?" "+p[0]:"s "+p[0]+"–"+p[1]}${w>=p[0]&&w<=p[1]?" · you are here":""}</div>
+      <div class="ph-name">${p[2]}</div><p>${p[3]}</p>
+    </div>`).join("");
+}
+document.getElementById("plan-start").onchange = e=>{
+  settings().progStart = e.target.value || weekDates()[0]; save(); renderPlan(); renderToday();
+};
+
+/* coach: reads last session's logged reps and says exactly what to do today */
+function parseRepRange(sets){
+  if (/sec/i.test(sets)) return null;
+  const ms = [...String(sets).matchAll(/(\d+)\s*[–-]\s*(\d+)/g)];
+  if (!ms.length) return null;
+  const m = ms[ms.length-1];
+  return { lo:+m[1], hi:+m[2] };
+}
+function parseInc(t){ const m = String(t).match(/\+\s*([\d.]+)/); return m?parseFloat(m[1]):null; }
+function parseRepList(s){
+  const ns = String(s||"").split(/[^\d.]+/).filter(Boolean).map(Number).filter(n=>isFinite(n)&&n<100);
+  return ns.length?ns:null;
+}
+function lastSession(day,i){
+  const cur = dateFor(day);
+  const keys = Object.keys(state.logs).filter(k=>k<cur).sort().reverse();
+  for (const k of keys){
+    const d = new Date(k+"T12:00:00");
+    if (DAYS[(d.getDay()+6)%7]!==day) continue;
+    const l = state.logs[k];
+    const w = l.w&&l.w[i], r = l.r&&l.r[i];
+    if (w||r) return {w,r,date:k};
+  }
+  return null;
+}
+function roundLoad(x){ return Math.max(2.5, Math.round(x/2.5)*2.5); }
+function coach(day,i,ex){
+  const range = parseRepRange(ex[1]);
+  const inc = parseInc(ex[2]);
+  if (!state.goals) state.goals = {};
+  const goal = parseFloat(state.goals[day+"|"+i]);
+  const hist = lastSession(day,i);
+  let cls="", msg="";
+  if (!hist){
+    msg = `<b>First session:</b> start at the low end of the listed weight, leave 2–3 reps in reserve, and log weight + reps — next time I'll tell you exactly what to do.`;
+  } else {
+    const reps = parseRepList(hist.r);
+    const wNum = parseFloat(String(hist.w||"").replace(/[^\d.]/g,""));
+    const wTxt = hist.w ? `${hist.w}${/[a-z]/i.test(hist.w)?"":" lb"}` : "the same weight";
+    if (!range || !reps){
+      msg = `<b>Last time:</b> ${hist.w||"?"} × ${hist.r||"?"}. ` + (range?`Hit ${range.hi} clean on all sets, then we increase.`:`When it feels easy, add time/reps or slow the tempo.`);
+    } else {
+      const minRep = Math.min(...reps);
+      if (minRep >= range.hi){
+        cls = "up";
+        const next = (isFinite(wNum)&&inc) ? `go to <b>${roundLoad(wNum+inc)} lb</b> today`
+                   : inc ? `add ${inc} lb today` : `add a rep per set or slow the tempo`;
+        msg = `<b>Level up:</b> you hit ${range.hi}+ on every set (${reps.join("/")}) at ${wTxt} — ${next}.`;
+      } else if (minRep >= range.lo){
+        msg = `<b>Stay at ${wTxt}:</b> last time ${reps.join("/")}. Add reps until every set hits ${range.hi} — then we add weight.`;
+      } else if (minRep >= Math.max(1, range.lo-2)){
+        msg = `<b>Stay at ${wTxt}:</b> you fell just under ${range.lo} (${reps.join("/")}). Rest 30s longer between sets and get ${range.lo}+ on all sets today.`;
+      } else {
+        cls = "down";
+        const drop = isFinite(wNum) ? `drop to <b>${roundLoad(wNum*0.9)} lb</b>` : `drop the weight ~10%`;
+        msg = `<b>Too heavy:</b> target was ${range.lo}–${range.hi} and you hit ${minRep}. No problem — ${drop} today and build back up. Finding the right weight is part of the program.`;
+      }
+    }
+    if (isFinite(goal) && isFinite(wNum)){
+      if (wNum >= goal) msg += ` <b>Goal reached</b> (${goal} lb) — set a new one.`;
+      else {
+        const weeks = inc ? Math.ceil((goal-wNum)/inc) : null;
+        msg += ` Goal <b>${goal} lb</b>: ${Math.round((goal-wNum)*10)/10} lb to go${weeks?` — roughly ${weeks} good week${weeks>1?"s":""} at +${inc} lb`:""}.`;
+      }
+    } else if (isFinite(goal)){
+      msg += ` Goal: <b>${goal} lb</b>.`;
+    }
+  }
+  return {cls,msg};
+}
+
+/* ---------- render: week ---------- */
+function renderWeek(){
+  const grid = document.getElementById("week-grid");
+  grid.innerHTML = "";
+  let d=0, t=0;
+  DAYS.forEach(day=>{
+    const c = dayCompletion(day);
+    d += c.done; t += c.total;
+    const pct = c.total ? Math.round(100*c.done/c.total) : 0;
+    const el = document.createElement("div");
+    el.className = "weekday";
+    el.innerHTML = `<div class="wd-title">${day}</div>
+      <div class="wd-sub">${PLAN[day].title}</div>
+      <div class="meter"><div style="width:${pct}%"></div></div>
+      <div class="wd-pct">${pct}% · ${c.done}/${c.total}</div>`;
+    el.onclick = ()=>{ currentDay=day; showView("today"); renderToday(); };
+    grid.appendChild(el);
+  });
+  const wpct = t ? Math.round(100*d/t) : 0;
+  document.getElementById("week-hero").textContent = wpct + "%";
+  document.getElementById("week-meter").style.width = wpct + "%";
+}
+
+/* ---------- render: grocery ---------- */
+function renderGrocery(){
+  const el = document.getElementById("grocery-list");
+  el.innerHTML = "";
+  Object.entries(GROCERY).forEach(([cat, items])=>{
+    const h = document.createElement("h3");
+    h.textContent = cat; h.className = "groc-cat";
+    el.appendChild(h);
+    items.forEach(item=>{
+      const key = cat+"|"+item;
+      const row = document.createElement("label");
+      row.className = "groc-item" + (state.grocery[key] ? " done":"");
+      row.innerHTML = `<input type="checkbox" ${state.grocery[key]?"checked":""}><span>${item}</span>`;
+      row.querySelector("input").onchange = e=>{ state.grocery[key]=e.target.checked; save(); renderGrocery(); };
+      el.appendChild(row);
+    });
+  });
+}
+
+/* ---------- render: progress chart ---------- */
+const METRICS = {
+  weight:["Body weight","lb"], waist:["Waist","in"], chest:["Chest","in"],
+  bicep:["Bicep","in"], thigh:["Thigh","in"]
+};
+function renderProgress(){
+  const metric = document.getElementById("p-metric").value;
+  const unit = METRICS[metric][1];
+  const all = state.progress.slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const entries = all.filter(e=>isFinite(e[metric]) && e[metric]!==null);
+  const el = document.getElementById("chart");
+  const tip = document.getElementById("chart-tip");
+  tip.style.display="none";
+
+  if (entries.length < 2){
+    el.innerHTML = `<p class="cardio-note">Log ${METRICS[metric][0].toLowerCase()} at least twice and the trend line appears here.</p>`;
+  } else {
+    const W=640, H=240, px=44, pr=58, py=22;
+    const vs = entries.map(e=>e[metric]);
+    const band = metric==="weight" ? {lo:170, hi:175} : null; // Sahil's recomp target zone
+    const vsAll = band ? vs.concat([band.lo, band.hi]) : vs;
+    // clean tick steps: whole numbers for weight, half-inches allowed for girths
+    const span = Math.max(...vsAll) - Math.min(...vsAll);
+    const rough = (span + (unit==="lb"?4:1)) / 4;
+    const step = rough <= 0.5 ? 0.5 : Math.max(1, Math.ceil(rough));
+    const pad = unit==="lb" ? 2 : 0.5;
+    let lo = Math.floor((Math.min(...vsAll)-pad)/step)*step;
+    let hi = Math.ceil((Math.max(...vsAll)+pad)/step)*step;
+    const fmtV = v => (step % 1 ? v.toFixed(1) : Math.round(v));
+    const X = i => px + (W-px-pr) * (entries.length===1?0.5 : i/(entries.length-1));
+    const Y = w => py + (H-py-26) * (1-(w-lo)/(hi-lo));
+    let g = "";
+    for (let v=lo; v<=hi+1e-9; v+=step){
+      const y = Y(v);
+      g += `<line x1="${px}" y1="${y}" x2="${W-14}" y2="${y}" stroke="var(--grid)" stroke-width="1"/>
+            <text x="${px-8}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-variant-numeric="tabular-nums">${fmtV(v)}</text>`;
+    }
+    const pts = entries.map((e,i)=>`${X(i)},${Y(e[metric])}`).join(" ");
+    const dots = entries.map((e,i)=>
+      `<circle cx="${X(i)}" cy="${Y(e[metric])}" r="6" fill="var(--surface)"/>
+       <circle cx="${X(i)}" cy="${Y(e[metric])}" r="4" fill="var(--series)"/>`).join("");
+    const last = entries[entries.length-1];
+    const bandSvg = band ? `<rect x="${px}" y="${Y(band.hi)}" width="${W-px-pr}" height="${Y(band.lo)-Y(band.hi)}" fill="var(--series-wash)"/>
+      <text x="${px+8}" y="${Y(band.hi)+14}" font-size="11" fill="var(--muted)">goal zone ${band.lo}–${band.hi} lb</text>` : "";
+    el.innerHTML = `<svg id="chart-svg" viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+      ${g}
+      ${bandSvg}
+      <line x1="${px}" y1="${H-26}" x2="${W-14}" y2="${H-26}" stroke="var(--baseline)" stroke-width="1"/>
+      <polyline points="${pts}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <line id="xhair" x1="0" y1="${py}" x2="0" y2="${H-26}" stroke="var(--baseline)" stroke-width="1" style="display:none"/>
+      ${dots}
+      <text x="${X(entries.length-1)+10}" y="${Y(last[metric])+4}" text-anchor="start" font-size="12" font-weight="600" fill="var(--ink)">${last[metric]} ${unit}</text>
+      <rect id="hover" x="${px}" y="${py}" width="${W-px-pr}" height="${H-py-26}" fill="transparent"/>
+    </svg>`;
+    const svg = document.getElementById("chart-svg");
+    const hover = document.getElementById("hover"), xhair = document.getElementById("xhair");
+    hover.addEventListener("mousemove", ev=>{
+      const r = svg.getBoundingClientRect();
+      const mx = (ev.clientX - r.left) * (W / r.width);
+      let best=0, bd=1e9;
+      entries.forEach((e,i)=>{ const d=Math.abs(X(i)-mx); if(d<bd){bd=d;best=i;} });
+      const e = entries[best];
+      xhair.style.display=""; xhair.setAttribute("x1",X(best)); xhair.setAttribute("x2",X(best));
+      tip.style.display="block";
+      const parts = Object.keys(METRICS).filter(k=>isFinite(e[k])&&e[k]!==null)
+        .map(k=>`${METRICS[k][0]} ${e[k]} ${METRICS[k][1]}`);
+      tip.innerHTML = `<b>${e.date}</b><br>` + parts.join("<br>");
+      const wrap = el.getBoundingClientRect();
+      let tx = ev.clientX - wrap.left + 12;
+      if (tx > wrap.width - 150) tx = ev.clientX - wrap.left - 150;
+      tip.style.left = tx+"px";
+      tip.style.top = (ev.clientY - wrap.top - 10)+"px";
+    });
+    hover.addEventListener("mouseleave", ()=>{ tip.style.display="none"; xhair.style.display="none"; });
+  }
+
+  const tbl = document.getElementById("entry-table");
+  if (!all.length){ tbl.innerHTML=""; return; }
+  const cols = Object.keys(METRICS);
+  tbl.innerHTML = `<tr><th>Date</th>${cols.map(k=>`<th>${METRICS[k][0]} (${METRICS[k][1]})</th>`).join("")}<th></th></tr>` +
+    all.map(e=>`<tr><td>${e.date}</td>${cols.map(k=>`<td>${isFinite(e[k])&&e[k]!==null?e[k]:"\u2014"}</td>`).join("")}
+      <td><button data-del="${e.date}">remove</button></td></tr>`).join("");
+  tbl.querySelectorAll("button").forEach(b=>b.onclick = ()=>{
+    state.progress = state.progress.filter(e=>e.date!==b.dataset.del); save(); renderProgress();
+  });
+}
+
+document.getElementById("p-metric").onchange = renderProgress;
+document.getElementById("p-add").onclick = ()=>{
+  const date = document.getElementById("p-date").value;
+  if (!date) return;
+  const vals = {};
+  let any = false;
+  Object.keys(METRICS).forEach(k=>{
+    const v = parseFloat(document.getElementById("p-"+k).value);
+    if (isFinite(v)) { vals[k] = v; any = true; }
+  });
+  if (!any) return;
+  const existing = state.progress.find(e=>e.date===date);
+  if (existing) Object.assign(existing, vals);   // same date: merge, keep earlier fields
+  else state.progress.push(Object.assign({date}, vals));
+  save(); renderProgress();
+  Object.keys(METRICS).forEach(k=>document.getElementById("p-"+k).value="");
+};
+document.getElementById("p-date").value = localISO(new Date());
+
+/* ---------- nav ---------- */
+const VIEWS = ["today","schedule","plan","week","grocery","progress","guide"];
+function showView(v){
+  VIEWS.forEach(x=>{
+    document.getElementById("view-"+x).classList.toggle("active", x===v);
+    document.getElementById("nav-"+x).classList.toggle("active", x===v);
+  });
+  if (v==="schedule") renderSchedule();
+  if (v==="plan") renderPlan();
+  if (v==="week") renderWeek();
+  if (v==="grocery") renderGrocery();
+  if (v==="progress") renderProgress();
+}
+const nav = document.createElement("div");
+nav.className = "nav";
+nav.innerHTML = VIEWS.map(v=>`<button id="nav-${v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join("");
+document.body.appendChild(nav);
+VIEWS.forEach(v=>document.getElementById("nav-"+v).onclick = ()=>showView(v));
+
+/* backup / restore — 12 weeks of logs shouldn't live or die with one browser */
+document.getElementById("exp-btn").onclick = ()=>{
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(state,null,1)], {type:"application/json"}));
+  a.download = "fitness-backup-" + localISO(new Date()) + ".json";
+  a.click(); URL.revokeObjectURL(a.href);
+};
+document.getElementById("imp-btn").onclick = ()=>document.getElementById("imp-file").click();
+document.getElementById("imp-file").onchange = e=>{
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{
+    try {
+      const s = JSON.parse(rd.result);
+      if (!s || typeof s.logs !== "object") throw new Error("not a backup file");
+      state = s; save();
+      renderToday(); showView("today");
+      alert("Backup restored.");
+    } catch(err){ alert("That file isn't a valid backup: " + err.message); }
+  };
+  rd.readAsText(f);
+};
+
+showView("today");
+renderToday();
+</script>
+</body>
+</html>
